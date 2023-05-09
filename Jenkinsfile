@@ -9,7 +9,7 @@ pipeline {
 
       }
       steps {
-        echo 'compile maven app'
+        echo 'compiling....'
         sh 'mvn compile'
       }
     }
@@ -22,7 +22,7 @@ pipeline {
 
       }
       steps {
-        echo 'test maven app'
+        echo 'running unit tests...'
         sh 'mvn clean test'
       }
     }
@@ -32,43 +32,41 @@ pipeline {
         docker {
           image 'maven:3.6.3-jdk-11-slim'
         }
-
       }
-      when {
-        branch 'master'
-      }
+      when { branch 'master' }
       steps {
-        echo 'package maven app'
+        echo 'generating the artifact....'
         sh 'mvn package -DskipTests'
+        archiveArtifacts 'target/*.war'
       }
     }
 
     stage('Docker BnP') {
       agent any
-      when {
-        branch 'master'
-      }
-      failFast true
-      parallel {
-        stage ('BnP') {
-          steps {
-            script {
-              docker.withRegistry('https://index.docker.io/v1/', 'dockerlogin') {
-                def dockerImage = docker.build("pinkballoon/sysfoo:v${env.BUILD_ID}", "./")
-                dockerImage.push()
-                dockerImage.push("latest")
-                dockerImage.push("dev")
-            }
+      when { branch 'master' }
+      steps {
+        script {
+          docker.withRegistry('https://index.docker.io/v1/', 'dockerlogin') {
+            def dockerImage = docker.build("pinkballoon/sysfoo:v${env.BRANCH_NAME}-${env.BUILD_ID}", "./")
+            dockerImage.push()
+            dockerImage.push("latest")
+            dockerImage.push("dev")
           }
         }
+
       }
-        stage ('Package'){
-          echo 'packaging'
-        }
     }
+
+
 
   }
   tools {
     maven 'Maven 3.6.3'
+  }
+  post {
+    always {
+      echo 'This pipeline is completed..'
+    }
+
   }
 }
