@@ -1,12 +1,13 @@
 pipeline {
-  agent {
-    docker {
-      image 'maven:3.6.3-jdk-11-slim'
-    }
-
-  }
+  agent none
   stages {
     stage('build') {
+      agent {
+        docker {
+          image 'maven:3.6.3-jdk-11-slim'
+        }
+
+      }
       steps {
         echo 'compile maven app'
         sh 'mvn compile'
@@ -14,44 +15,28 @@ pipeline {
     }
 
     stage('test') {
-      parallel {
-        stage('test') {
-          steps {
-            echo 'test maven app'
-            sh 'mvn clean test'
-          }
+      agent {
+        docker {
+          image 'maven:3.6.3-jdk-11-slim'
         }
 
-        stage('unit test') {
-          steps {
-            sleep 3
-          }
-        }
-
-        stage('SCA') {
-          steps {
-            sleep 1
-          }
-        }
-
+      }
+      steps {
+        echo 'test maven app'
+        sh 'mvn clean test'
       }
     }
 
     stage('package') {
-      parallel {
-        stage('package') {
-          steps {
-            echo 'package maven app'
-            sh 'mvn package -DskipTests'
-          }
+      agent {
+        docker {
+          image 'maven:3.6.3-jdk-11-slim'
         }
 
-        stage('pkg') {
-          steps {
-            sleep 2
-          }
-        }
-
+      }
+      steps {
+        echo 'package maven app'
+        sh 'mvn package -DskipTests'
       }
     }
 
