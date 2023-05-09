@@ -34,6 +34,9 @@ pipeline {
         }
 
       }
+      when {
+        branch 'master'
+      }
       steps {
         echo 'package maven app'
         sh 'mvn package -DskipTests'
@@ -42,17 +45,26 @@ pipeline {
 
     stage('Docker BnP') {
       agent any
-      steps {
-        script {
-          docker.withRegistry('https://index.docker.io/v1/', 'dockerlogin') {
-            def dockerImage = docker.build("pinkballoon/sysfoo:v${env.BUILD_ID}", "./")
-            dockerImage.push()
-            dockerImage.push("latest")
-            dockerImage.push("dev")
+      when {
+        branch 'master'
+      }
+      failFast true
+      parallel {
+        stage ('BnP') {
+          steps {
+            script {
+              docker.withRegistry('https://index.docker.io/v1/', 'dockerlogin') {
+                def dockerImage = docker.build("pinkballoon/sysfoo:v${env.BUILD_ID}", "./")
+                dockerImage.push()
+                dockerImage.push("latest")
+                dockerImage.push("dev")
+            }
           }
         }
-
       }
+        stage ('Package'){
+          echo 'packaging'
+        }
     }
 
   }
